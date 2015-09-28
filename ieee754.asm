@@ -7,23 +7,23 @@
 
 
 #######################################################
-#  Diretivas
+# Diretivas
 #######################################################
 
 .data # diretiva para inicio do seg de dados
-	# bytes do nÃºmero binÃ¡rio
+	# bytes do número binário
 	.align 0
-	numeroBinario: .space 32 # 32 bytes
+	floatIEEE754: .space 32 # 32 bytes
 
-	# nÃºmero flutuante para teste
-	.align 4
-	numeroExemplo: .float 2.5
+	# número flutuante para teste
+	.align 2
+	numeroExemplo: .float 1
 	
 
 .text # diretiva para inicio do segmento de texto
 
 
-.globl main # diretiva para mar rotulo em outro prog
+.globl main # diretiva para main
 
 
 
@@ -41,16 +41,11 @@ main: # rotulo para ponto de entrada no processo
 
 
 	#######################################################
-	# aqui o programa deve chamar a funÃ§Ã£o de bem-vindo
+	# aqui o programa deve chamar a função de bem-vindo
 	# ler as entradas do teclado e trata-las
-	# em seguida deve chamar a funÃ§Ã£o floatToBinary e printBinToHex
-	# parte do FÃ¡bio
+	# em seguida deve chamar a função floatToBinary e printBinHex
+	# parte do Fábio
 	#######################################################
-
-
-	
-	# l.s $f0, numero
-	# jal floatToBinary
 
 
 	li $v0, 10 # $vo = 10 cod para exit
@@ -62,30 +57,46 @@ main: # rotulo para ponto de entrada no processo
 
 
 
+
+#######################################################
+# Função que converte float em binário na memória
+# Parametros:
+#    - $a0: parte inteira do número
+#    - $a1: parte fracionária do número
+#
+# Retorno:
+#    - floatIEEE754: cada byte correspodenrá ao
+# número 0 e 1
+#######################################################
+
 floatToBinary:
 	#######################################################
-	# O programa deve pegar o nÃºmero float em $f0
-	# e converte-lo em binÃ¡rio, jogando na memÃ³ria
-	# no endereÃ§o numeroBinario
+	# O programa deve pegar o número float em $f0
+	# e converte-lo em binário, jogando na memória
+	# no endereço floatIEEE754
 	# parte do Leonardo
 	#
 	# deve ser chamado com jal
 	#######################################################
 
 
+	jr $ra
 
 
 
 
 
 
-printBinToHex:
+
+printBinHex:
 	#######################################################
 	# Aqui o programa deve obter
-	# os nÃºmeros binÃ¡rios na sequencia que estÃ£o na memÃ³ria
-	# a partir do endereÃ§o numeroBinario, deve imprimir o
-	# nÃºmero no formato hexadecimal
+	# os números binários na sequencia que estão na memória
+	# a partir do endereço floatIEEE754, deve imprimir o
+	# o número no formato binário e no formato hexadecimal
 	# parte do Thiago
 	#
 	# deve ser chamado com jal
 	########################################################
+
+	jr $ra
