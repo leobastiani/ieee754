@@ -19,7 +19,7 @@
 	bit24EhUm: .word 0x00800000
 	bit25EhUm: .word 0x01000000
 
-	numeroTeste: .float 13.1875
+	numeroTeste: .float -13.1875
 	
 
 .text # diretiva para inicio do segmento de texto
@@ -45,17 +45,19 @@ main: # rotulo para ponto de entrada no processo
 	#######################################################
 	# aqui o programa deve chamar a função de bem-vindo
 	# ler as entradas do teclado e trata-las
-	# em seguida deve chamar a função floatToBinary e printBinHex
+	# em seguida deve chamar a função intPartsToFloat e printBinHex
 	# parte do Fábio
 	#######################################################
 	l.s $f1, numeroTeste
 
 
-	li $a0, 13
-	li $a1, 1875
-	li $a2, 10000
+	li $a0, 13 # $a0 = 13
+	li $a1, 1875 # $a1 = 1875
+	li $a2, 10000 # $a2 = 10000
+	li $a3, 1 # $a3 = 1
+	# número do exemplo: -13.1875
 
-	jal floatToBinary
+	jal intPartsToFloat
 
 
 	li $v0, 10 # $vo = 10 cod para exit
@@ -80,10 +82,9 @@ main: # rotulo para ponto de entrada no processo
 #
 # Retorno:
 #    - $v0: número no padrão IEEE 754
-# número 0 e 1
 #######################################################
 
-floatToBinary:
+intPartsToFloat:
 	# trabalha com t7, t8 e t9 ao inves de a0, a1 e a2
 	move $t7, $a0 # $t7 = $a0
 	move $t8, $a1 # $t8 = $a1
@@ -114,7 +115,7 @@ floatToBinary:
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
 		# se for positivo, não precisa multiplicar por -1
-		beq $a3, $zero, ate24Bit # ($a3 == $zero) -> ate24Bit
+		bge $t7, $zero, ate24Bit # ($t7 >= $zero) -> ate24Bit
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
 
@@ -170,7 +171,7 @@ floatToBinary:
 		devoFazerShift:
 			# nesse caso, a parte fracionária não precisa ser considerada
 			# devo fazer shift até 25 pra frente ser 0
-			lw $t1, bit25EhUm # $t1 = Memory[bit25EhUm]
+			# $t1 = Memory[bit25EhUm]
 			loopFazerShift:
 				srl $t0, $t0, 1 # $t0 = $t0 >> 1
 				bge $t0, $t1, loopFazerShift # ($t0 >= bit25EhUm) -> loopFazerShift
@@ -189,7 +190,44 @@ floatToBinary:
 		#######################################################
 		# Nesse ponto, só falta colocar o expoente em v0
 		#######################################################
-		
+		calculoExpoenteReal:
+			# o resultado dessa função estará em t0
+			li $t0, 0 # $t0 = 0
+			# se o número tiver parte inteira, devo
+			bne $t7, $zero, temParteInt # (partInt != $zero) -> temParteInt
+
+
+			move $t1, $t8 # $t1 = partFrac
+			loopSoPartFrac:
+				# aqui é o caso se o número for do tipo 0.XXXXXX
+				# vai multiplicando o número por 2 até partFrac ultrapassar a2
+				sll $t1, $t1, 1 # $t1 = $t1 << 1
+				addi $t0, $t0, -1 # $t0 = $t0 + -1
+				bge $t1, $a2, calculoExpoenteIEEE # ($t1 >= 10^X) -> calculoExpoenteIEEE
+				j loopSoPartFrac
+
+
+			temParteInt:
+				move $t1, $t7 # $t1 = partInt
+				# vai dividindo por 2 até t1 ser igual a 1
+				li $t2, 1 # $t2 = 1
+				loopParteInteira:
+					beq $t1, $t2, calculoExpoenteIEEE # ($t1 == "1") -> calculoExpoenteIEEE
+					# divide t1 por 2
+					srl $t1, $t1, 1 # $t1 = $t1 >> 1
+					addi $t0, $t0, 1 # $t0 = $t0 + 1
+					j loopParteInteira
+
+		calculoExpoenteIEEE:
+			# t0 deve ser normalizado com 127
+			addi $t0, $t0, 127 # $t0 = $t0 + 127
+
+			# nesse ponto, só devo ajustar t0 para frente
+			# e concatenar com v0
+			sll $t0, $t0, 23 # $t0 = $t0 << 23
+			or $v0, $v0, $t0 # $v0 = $v0 | $t0
+
+
 
 
 	jr $ra
