@@ -63,6 +63,8 @@
 		bne $t1, 43, verifica_menos	#verirfica se eh "+" ou "-"
 		beq $t1, 43, se_mais
 		beq $t1, 45, se_menos
+		
+		voltamain:
 	
 		li $s0, 0		#s0=0 s0->posicao da string
 		li $a0, 0		#a1=0 a0->valor inteiro
@@ -76,9 +78,11 @@
 		
 	se_mais:
 		li $a3, 1
+		j voltamain
 		
 	se_menos:
 		li $a3, 0
+		j voltamain
 	loop_int:
 		addi $s0, $s0, 1
 		lb $t1, buffer($s0)
