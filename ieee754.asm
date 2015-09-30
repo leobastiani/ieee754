@@ -11,11 +11,15 @@
 #######################################################
 
 .data # diretiva para inicio do seg de dados
-	# bytes do número binário
-	floatIEEE754: .space 32 # 32 bytes
 
 	# número que diz se o primeiro byte é um
 	primeiroUmRestoZero: .word 0x80000000
+	# variavel que o vigésimo terceiro bit é 23
+	bit23EhUm: .word 0x00400000
+	bit24EhUm: .word 0x00800000
+	bit25EhUm: .word 0x01000000
+
+	numeroTeste: .float 13.1875
 	
 
 .text # diretiva para inicio do segmento de texto
@@ -44,9 +48,13 @@ main: # rotulo para ponto de entrada no processo
 	# em seguida deve chamar a função floatToBinary e printBinHex
 	# parte do Fábio
 	#######################################################
-	li $a0, 1 # $a0 = 1
-	li $a1, 131 # $a1 = 131
-	# número 1.131
+	l.s $f1, numeroTeste
+
+
+	li $a0, 13
+	li $a1, 1875
+	li $a2, 10000
+
 	jal floatToBinary
 
 
@@ -65,38 +73,30 @@ main: # rotulo para ponto de entrada no processo
 # Parametros:
 #    - $a0: parte inteira do número
 #    - $a1: parte fracionária do número
+#    - $a2: número na forma 10 ^ X que divide $a1
+#    - $a3: 0 se o número for positivo, 1 se for negativo
+#
+#    - O número será: ($a0 + $a1 / $a2)  *  ( -1 * $a3)
 #
 # Retorno:
-#    - floatIEEE754: cada byte correspodenrá ao
+#    - $v0: número no padrão IEEE 754
 # número 0 e 1
 #######################################################
 
 floatToBinary:
-	
+	# trabalha com t7, t8 e t9 ao inves de a0, a1 e a2
+	move $t7, $a0 # $t7 = $a0
+	move $t8, $a1 # $t8 = $a1
+	move $t9, $a2 # $t9 = $a2
 
-	###
-	# Caso se ele for zero
-	###
-	# seta todos os bytes para zero
-	li $t0, 0 # $t0 = 0
-	# começa do primeiro bit
-	# vai até 32
-	li $t1, 32 # $t1 = 32
-
-	loopSetaTodosZero:
-		la $t3, floatIEEE754 # t3 será o byte q eu vou setar
-		add $t3, $t3, $t0 # $t3 = $t3 + $t0
-		sb $zero, 0($t3) # Memory[$t3 + 0] = $zero
-		
-		# incrementa t0
-		addi $t0, $t0, 1 # $t0 = $t0 + 1
-
-		# se t0 != t1, volta para seta todos Zero
-		bne $t0, $t1, loopSetaTodosZero
+	# seta a resposta para zero
+	li $v0, 0 # $v0 = 0
 
 	# caso especial, se for igual a zero
-	bne $a0, $a1, naoEhZero
-	bne $a0, $a1, naoEhZero
+	bne $t7, $zero, naoEhZero # ($t7 != $zero) -> naoEhZero
+	bne $t8, $zero, naoEhZero # ($t8 != $zero) -> naoEhZero
+
+	# é zero!!
 	# retorna a função
 	jr $ra
 
@@ -106,60 +106,90 @@ floatToBinary:
 	###
 	naoEhZero:
 
-	tratarPartInt:
-		# se a parte inteira é zero, já pula pra partIntTratada
-		beqz $a0, partIntTratada # ($a0 == 0) => partIntTratada
+	setaPrimeiroBit:
+		# muito fácil de setar
+		move $t0, $a3 # $t0 = $a3
+		sll $t0, $t0, 31 # $t0 = $t0 << 31
+		# agrega o valor a v0
+		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
-		# setando os bits da parte inteira
+		# se for positivo, não precisa multiplicar por -1
+		beq $a3, $zero, ate24Bit # ($a3 == $zero) -> ate24Bit
+		# se for negativo, multiplica por -1
+		sub $t7, $zero, $t7 # $t7 = $zero - $t7
 
-		# começa setando os bits de floatIEEE754 de acordo com os bits do número
-		# começa setando pelo número inteiro
-		# t0 é a parte inteira
-		# t1 é a parte fracionária
-		move $t0, $a0 # $t0 = $a0
-		move $t1, $a1 # $t1 = $a1
-		# vai dando shift até o primeiro bit ser um
-		# t3 terá o valor para se fazer and
-		lw $t3, primeiroUmRestoZero # $t3 = 0x80000000
-		shiftAtePrimeiroUm:
-			# t4 irá dizer se o número já foi tratado
-			and $t4, $t0, $t3 # $t4 = $t0 & $t3
-			seq $t4, $t4, $t3 # $t4 = ($t4 == $t3)
-			# se t4 é um (não for zero), já pode sair
-			bne $t4, $zero, partIntTratada # ($t4 != $zero) => partIntTratada
 
-			# o número é do tipo 0000100010..., devemos dar um shift para esquerda
+	# se $t8 for zero, seta $t9 para 10
+	bne $t8, $zero, ate24Bit # ($t8 != $zero) -> ate24Bit
+	# t8 == zero
+	li $t9, 10 # $t9 = 10
+
+	ate24Bit:
+		# testa se a parte inteira é maior do que 23º bit setado em 1
+		move $t0, $t7 # $t0 = $t7
+		lw $t1, bit25EhUm # $t1 = Memory[bit25EhUm]
+		lw $t2, bit24EhUm # $t2 = Memory[bit24EhUm]
+
+		# se a parte inteira tiver o 25º bit ou mais definido
+		bge $t0, $t1, devoFazerShift # ($t0 >= bit25EhUm) -> devoFazerShift
+
+
+		# nesse caso aqui, não precisamos fazer o shift, e devemos concatenar com o número fracionario
+		move $t1, $t8 # $t1 = $t8
+
+		loopConcatenaFracionario:
 			sll $t0, $t0, 1 # $t0 = $t0 << 1
-			# volta para o loop
-			j shiftAtePrimeiroUm
+			# dobro o valor de t1
+			sll $t1, $t1, 1 # $t1 = $t1 << 1
+			blt $t1, $t9, setarParaZero # ($t1  < $t9) -> setarParaZero
+
+			# devo setar um no primeiro bit de t0
+			ori $t0, $t0, 1 # $t0 = $t0 | 1
+
+			# agora, subtrai t9 de t1
+			sub $t1, $t1, $t9 # $t1 = $t1 - $t9 (t1 - 10 ^ X)
 
 
-		partIntTratada:
-			# se for zero, não preciso tratar
-			beqz $a1, partIntFracTratada # ($a1 == 0) => partIntFracTratada
-
-			# $t3 será um número da forma 10 ^ x
-			# $t3 deve ser > $a1
-			# $t4 é 10 pq não tem mult immediate
-			li $t4, 10 # $t4 = 10
-			# começa valendo 1
-			li $t3, 1 # $t3 = 1
-			loop10ElevadoX:
-				bge $t3, $a1, t3EhMaiorA1 # ($t3 >= $a1) => t3EhMaiorA1
-
-				# se t3 não for maior do que a1
-				# multiplica t3 por 10
-				mul $t3, $t3, $t4 # $t3 = $t3 * 10
-				j loop10ElevadoX
+			setarParaZero:
+				# não preciso fazer nada com t0
+				# apenas continuo o programa
 
 
-			t3EhMaiorA1:
-				# TODO!!
+			# condição de loop
+			blt $t0, $t2, loopConcatenaFracionario # ($t0  < bit24EhUm) -> loopConcatenaFracionario
+
+			# já acabou de concatenar
+			# se o resto for diferente de zero, devo somar um
+			beq $t1, $zero, fracionarioConcatenado # (Resto == $zero) -> fracionarioConcatenado
+			# resto não é zero
+			addiu $t0, $t0, 1 # $t0 = $t0 + 1
+			j fracionarioConcatenado
 
 
-		partIntFracTratada:
+
+		devoFazerShift:
+			# nesse caso, a parte fracionária não precisa ser considerada
+			# devo fazer shift até 25 pra frente ser 0
+			lw $t1, bit25EhUm # $t1 = Memory[bit25EhUm]
+			loopFazerShift:
+				srl $t0, $t0, 1 # $t0 = $t0 >> 1
+				bge $t0, $t1, loopFazerShift # ($t0 >= bit25EhUm) -> loopFazerShift
 
 
+		fracionarioConcatenado:
+			# remover o 24º bit
+			lw $t2, bit24EhUm # $t2 = Memory[bit24EhUm]
+			xor $t0, $t0, $t2 # $t0 = $t0 xor $t2
+
+			# agrega v0 com t0
+			or $v0, $v0, $t0 # $v0 = $v0 | $t0
+
+
+
+		#######################################################
+		# Nesse ponto, só falta colocar o expoente em v0
+		#######################################################
+		
 
 
 	jr $ra

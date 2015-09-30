@@ -1,3 +1,8 @@
+# arquivos de backups meu
+bkp*.*
+*.txt
+
+
 # Arquivos do sublime
 subl
 
