@@ -246,7 +246,13 @@ intPartsToFloat:
 			# já acabou de concatenar
 			# se o resto for diferente de zero, devo somar um
 			beq $t1, $zero, fracionarioConcatenado # (Resto == $zero) -> fracionarioConcatenado
-			# resto não é zero
+
+			# Resto != 0
+			# se t0 for esse número q t3 está recebendo, não faz nada
+			li $t3, 0x00ffffff # $t3 = 0x00ffffff
+			beq $t0, $t3, fracionarioConcatenado # ($t0 == casoEspecialNaoSoma) -> fracionarioConcatenado
+
+			# t0 != casoEspecialNaoSoma
 			addiu $t0, $t0, 1 # $t0 = $t0 + 1
 			j fracionarioConcatenado
 
