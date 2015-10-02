@@ -55,16 +55,6 @@
 
 	
 	main:
-		# exemplo -741.228
-		li $a0, 741 # $a0 = 741
-		li $a1, 228 # $a1 = 228
-		li $a2, 1000 # $a2 = 1000
-		li $a3, 1 # $a3 = 1
-		jal intPartsToFloat
-		# em v0 estará o número
-		move $a0, $v0 # $a0 = $v0
-		jal printBinHex
-		j main
 
 
 		li $v0, 4	#imprimir string
@@ -82,8 +72,10 @@
 		jal ler_string		#le a string
 		lb $t1, buffer
 		
-		bne $t1, 43, verifica_menos	#verirfica se eh "+" ou "-"
+		bne $t1, 43, verifica_semenos	#verirfica se eh "+" ou "-"
 		beq $t1, 43, se_mais
+		
+		eh_menos:
 		beq $t1, 45, se_menos
 		
 		voltamain:
@@ -91,20 +83,37 @@
 		li $s0, 0		#s0=0 s0->posicao da string
 		li $a0, 0		#a1=0 a0->valor inteiro
 		li $a1, 0		#a2=0 a2->valor decimal
-		li $a2, 0		#numero de casas decimais
+		li $a2, 1		#numero que divide a parte decimal
 		jal loop_int
+		jal verifica_a2		#se a2 for igual a 1 na verdade ele deveria ser 0
 		
 		#CATCH-IN CONTINUA DAQUI
-				
+		
+		jal intPartsToFloat
+		
+		move $a0, $v0
+
+		
 		j main
 		
+	verifica_a2:
+		beq $a2, 1, mudar_pra_zero
+		jr $ra
+		
+	mudar_pra_zero:
+		li $a2, 0
+		jr $ra
+		
+		
+		
 	se_mais:
-		li $a3, 1
+		li $a3, 0
 		j voltamain
 		
 	se_menos:
-		li $a3, 0
+		li $a3, 1
 		j voltamain
+		
 	loop_int:
 		addi $s0, $s0, 1
 		lb $t1, buffer($s0)
@@ -112,14 +121,21 @@
 		beq $t1, 44, loop_decimal	#verifica se eh virgula
 		blt $t1, 48, invalid		#verifica se eh um numero
 		bgt $t1, 57, invalid		#verifica se eh um numero
+
+		
 		mul $a0, $a0, 10		#aumenta uma casa decimal do valor anterior
+		
+
+		
 		addi $t1, $t1, -48		#transforma ascii em int
 		add $a0, $a0, $t1
+		
 		j loop_int
 		
-	verifica_menos:
+	verifica_semenos:
 		bne $t1, 45, invalid
-		jr $ra
+		j eh_menos
+		
 		
 	loop_decimal:
 		addi $s0, $s0, 1		#incrementa a posicao do "vetor"
@@ -128,7 +144,7 @@
 		blt $t1, 48, invalid		#verifica se eh um numero
 		bgt $t1, 57, invalid		#verifica se eh um numero
 		addi $t1, $t1, -48		#transforma ascii em int
-		addi $a2, $a2, 1		#soma o num de casas decimais
+		addi $a2, $a2, 10		#a2 = a2 * 10
 		mul $a1, $a1, 10		#aumenta uma casa decimal
 		add $a1, $a1, $t1		#soma com o proximo valor
 		j loop_decimal
