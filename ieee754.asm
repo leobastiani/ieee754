@@ -14,7 +14,7 @@
 
 	# número que diz se o primeiro byte é um
 	primeiroUmRestoZero: .word 0x80000000
-	# variavel que o vigésimo terceiro bit é 23
+	# variavel que o vigésimo terceiro bit é 1
 	bit23EhUm: .word 0x00400000
 	bit24EhUm: .word 0x00800000
 	bit25EhUm: .word 0x01000000
@@ -26,7 +26,17 @@
 	invalido:	.asciiz		"ENTRADA NAO EH VALIDA\n-------------------------------------------------------\n\n"
 	entrada:	.asciiz		"Digite o valor com sinal: "
 	buffer:		.space		40
-	
+
+
+	newLine:  .asciiz "\n"		#utilizado para o \n na funcao printbinhex
+	A: .asciiz "A"
+	B: .asciiz "B"
+	C: .asciiz "C"
+	D: .asciiz "D"
+	E: .asciiz "E"
+	F: .asciiz "F"			###
+
+
 
 .text # diretiva para inicio do segmento de texto
 
@@ -44,17 +54,18 @@
 #######################################################
 
 	
-main: # rotulo para ponto de entrada no processo
+	main:
+		# exemplo -741.228
+		li $a0, 741 # $a0 = 741
+		li $a1, 228 # $a1 = 228
+		li $a2, 1000 # $a2 = 1000
+		li $a3, 1 # $a3 = 1
+		jal intPartsToFloat
+		# em v0 estará o número
+		move $a0, $v0 # $a0 = $v0
+		jal printBinHex
+		j main
 
-
-
-
-	#######################################################
-	# aqui o programa deve chamar a função de bem-vindo
-	# ler as entradas do teclado e trata-las
-	# em seguida deve chamar a função intPartsToFloat e printBinHex
-	# parte do Fábio
-	#######################################################
 
 		li $v0, 4	#imprimir string
 		la $a0, menu
@@ -71,10 +82,8 @@ main: # rotulo para ponto de entrada no processo
 		jal ler_string		#le a string
 		lb $t1, buffer
 		
-		bne $t1, 43, verifica_semenos	#verirfica se eh "+" ou "-"
+		bne $t1, 43, verifica_menos	#verirfica se eh "+" ou "-"
 		beq $t1, 43, se_mais
-		
-		eh_menos:
 		beq $t1, 45, se_menos
 		
 		voltamain:
@@ -82,39 +91,20 @@ main: # rotulo para ponto de entrada no processo
 		li $s0, 0		#s0=0 s0->posicao da string
 		li $a0, 0		#a1=0 a0->valor inteiro
 		li $a1, 0		#a2=0 a2->valor decimal
-		li $a2, 1		#numero que divide a parte decimal
+		li $a2, 0		#numero de casas decimais
 		jal loop_int
-		jal verifica_a2		#se a2 for igual a 1 na verdade ele deveria ser 0
 		
 		#CATCH-IN CONTINUA DAQUI
-		
-		jal intPartsToFloat
-		
-		move $a0, $v0
-		
-		jal printBinHex
-
-		
+				
 		j main
 		
-	verifica_a2:
-		beq $a2, 1, mudar_pra_zero
-		jr $ra
-		
-	mudar_pra_zero:
-		li $a2, 0
-		jr $ra
-		
-		
-		
 	se_mais:
-		li $a3, 0
-		j voltamain
-		
-	se_menos:
 		li $a3, 1
 		j voltamain
 		
+	se_menos:
+		li $a3, 0
+		j voltamain
 	loop_int:
 		addi $s0, $s0, 1
 		lb $t1, buffer($s0)
@@ -122,21 +112,14 @@ main: # rotulo para ponto de entrada no processo
 		beq $t1, 44, loop_decimal	#verifica se eh virgula
 		blt $t1, 48, invalid		#verifica se eh um numero
 		bgt $t1, 57, invalid		#verifica se eh um numero
-
-		
 		mul $a0, $a0, 10		#aumenta uma casa decimal do valor anterior
-		
-
-		
 		addi $t1, $t1, -48		#transforma ascii em int
 		add $a0, $a0, $t1
-		
 		j loop_int
 		
-	verifica_semenos:
+	verifica_menos:
 		bne $t1, 45, invalid
-		j eh_menos
-		
+		jr $ra
 		
 	loop_decimal:
 		addi $s0, $s0, 1		#incrementa a posicao do "vetor"
@@ -145,7 +128,7 @@ main: # rotulo para ponto de entrada no processo
 		blt $t1, 48, invalid		#verifica se eh um numero
 		bgt $t1, 57, invalid		#verifica se eh um numero
 		addi $t1, $t1, -48		#transforma ascii em int
-		addi $a2, $a2, 10		#a2 = a2 * 10
+		addi $a2, $a2, 1		#soma o num de casas decimais
 		mul $a1, $a1, 10		#aumenta uma casa decimal
 		add $a1, $a1, $t1		#soma com o proximo valor
 		j loop_decimal
@@ -188,7 +171,9 @@ main: # rotulo para ponto de entrada no processo
 		
 	end:
 		li $v0, 10
-		syscall	
+		syscall
+		
+		
 	
 
 
@@ -377,15 +362,83 @@ intPartsToFloat:
 
 
 
-printBinHex:
-	#######################################################
-	# Aqui o programa deve obter
-	# os números binários na sequencia que estão na memória
-	# a partir do endereço floatIEEE754, deve imprimir o
-	# o número no formato binário e no formato hexadecimal
-	# parte do Thiago
-	#
-	# deve ser chamado com jal
-	########################################################
-
+printBinHex:  
+		li $t0, 31 # 
+		li $t5, 0#registrador auxiliar como parametro de blt
+		move $t1, $a0#tl = a0
+		li $v0,1
+		loop: 
+			
+			srlv $t2, $t1, $t0 #shift right valor de t0
+			andi $t2,$t2,1
+			move $a0, $t2 #imprime
+			subi $t0,$t0,1 
+			syscall
+			blt $t0,$t5,exit
+			j loop
+			exit:
+			la     $a0, newLine #linha 371,372,373 responsaveis pelo printf( "\n")
+    			addi   $v0, $0, 4
+    			syscall
+		li $v0,1 #retomando valor anterior de $v0 antes das linhas que imprimem \n
+		
+		#Iniciando operacoes para converter e imprimir hexadecimal
+		li $t0, 28
+		li $t5, 9 #novamente registrador auxiliar	
+		loop2:
+			srlv $t2,$t1,$t0 
+			andi $t2,$t2,15 
+			blt  $t5,$t2,dezena	#se t5<t2, ex 9<10#a partir desta imprimimos hexadecimal
+			syscall 
+		dezena:				#imprime hexadecimal 10 ou maior
+			li $t5, 10
+			blt $t5,$t1,onze
+			la $a0, A	#indica impressao de uma string que representa 10 em hexadecimal
+			li $v0, 4
+			
+			syscall		
+		onze:
+			li $t5, 11
+			blt $t5,$t1,doze
+			la $a0, B	
+			li $v0, 4
+			
+			syscall	
+		doze:
+			li $t5, 12
+			blt $t5,$t1,treze
+			la $a0, C	
+			li $v0, 4
+			
+			syscall	
+		treze:
+			li $t5, 13
+			blt $t5,$t1,quatorze
+			la $a0, D	
+			li $v0, 4
+			
+			syscall	
+		quatorze:
+			li $t5, 14
+			blt $t5,$t1,quinze
+			la $a0, E	
+			li $v0, 4
+			
+			syscall	
+		quinze: 
+			li $t5, 15
+			la $a0, F	
+			li $v0, 4
+			syscall
+	
+			move $a0,$t2
+			subi $t0,$t0,4
+			syscall
+			blt $t0,$t5,exit2
+			j loop2
+			exit2:
+			
+			
+		
+	move $a0,$t1##fazer a0 = t1
 	jr $ra
