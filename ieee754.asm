@@ -56,7 +56,6 @@
 	
 	main:
 
-
 		li $v0, 4	#imprimir string
 		la $a0, menu
 		syscall
@@ -232,7 +231,7 @@ intPartsToFloat:
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
 		# se for positivo, não precisa multiplicar por -1
-		bge $t7, $zero, ate24Bit # ($t7 >= $zero) -> ate24Bit
+		bge $t7, $zero, naoEhZero # ($t7 >= $zero) -> naoEhZero
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
 
@@ -295,9 +294,10 @@ intPartsToFloat:
 
 			# já acabou de concatenar
 			# se o resto for diferente de zero, devo somar um
-			beq $t1, $zero, fracionarioConcatenado # (Resto == $zero) -> fracionarioConcatenado
+			ble $t1, $t8, fracionarioConcatenado # (Resto =< fracPart) -> fracionarioConcatenado
+			# Resto  > fracPart:
+			# devo somar 1
 
-			# Resto != 0
 			# se t0 for esse número q t3 está recebendo, não faz nada
 			li $t3, 0x00ffffff # $t3 = 0x00ffffff
 			beq $t0, $t3, fracionarioConcatenado # ($t0 == casoEspecialNaoSoma) -> fracionarioConcatenado
