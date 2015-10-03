@@ -1,4 +1,4 @@
-#######################################################
+######################################################
 # Trabalho 1 de ORG
 #######################################################
 
@@ -400,57 +400,66 @@ printBinHex:
 		
 		#Iniciando operacoes para converter e imprimir hexadecimal
 		li $t0, 28
-		li $t5, 9 #novamente registrador auxiliar	
+			
 		loop2:
 			srlv $t2,$t1,$t0 
 			andi $t2,$t2,15 
+			li $t5, 9 #novamente registrador auxiliar
 			blt  $t5,$t2,dezena	#se t5<t2, ex 9<10#a partir desta imprimimos hexadecimal
-			syscall 
+			li $v0,1
+			move $a0, $t2 ##imprimir 4
+			beq $t2,$t2,continue##reiniciar loop
 		dezena:				#imprime hexadecimal 10 ou maior
 			li $t5, 10
-			blt $t5,$t1,onze
+			blt $t5,$t2,onze
 			la $a0, A	#indica impressao de uma string que representa 10 em hexadecimal
 			li $v0, 4
 			
-			syscall		
+					
+			beq $t2,$t2,continue##reiniciar loop
 		onze:
 			li $t5, 11
-			blt $t5,$t1,doze
+			blt $t5,$t2,doze
 			la $a0, B	
 			li $v0, 4
 			
-			syscall	
+			
+			beq $t2,$t2,continue##reiniciar loop
 		doze:
 			li $t5, 12
-			blt $t5,$t1,treze
+			blt $t5,$t2,treze
 			la $a0, C	
 			li $v0, 4
 			
-			syscall	
+				
+			beq $t2,$t2,continue##reiniciar loop
 		treze:
 			li $t5, 13
-			blt $t5,$t1,quatorze
+			blt $t5,$t2,quatorze
 			la $a0, D	
 			li $v0, 4
 			
-			syscall	
+				
+			beq $t2,$t2,continue##reiniciar loop
 		quatorze:
 			li $t5, 14
-			blt $t5,$t1,quinze
+			blt $t5,$t2,quinze
 			la $a0, E	
 			li $v0, 4
-			
-			syscall	
+				
+			beq $t2,$t2,continue##reiniciar loop
 		quinze: 
 			li $t5, 15
 			la $a0, F	
 			li $v0, 4
-			syscall
-	
-			move $a0,$t2
+			
+			beq $t2,$t2,continue##reiniciar loop
+		continue:
+			##move $a0,$t2
 			subi $t0,$t0,4
 			syscall
-			blt $t0,$t5,exit2
+			li $t5,0
+			blt $t0,$t5,exit2 #se t0 < t5 exit do loop2
 			j loop2
 			exit2:
 			
