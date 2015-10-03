@@ -12,9 +12,9 @@
 
 .data # diretiva para inicio do seg de dados
 
-	# número que diz se o primeiro byte é um
+	# nÃºmero que diz se o primeiro byte Ã© um
 	primeiroUmRestoZero: .word 0x80000000
-	# variavel que o vigésimo terceiro bit é 1
+	# variavel que o vigÃ©simo terceiro bit Ã© 1
 	bit23EhUm: .word 0x00400000
 	bit24EhUm: .word 0x00800000
 	bit25EhUm: .word 0x01000000
@@ -35,6 +35,7 @@
 	D: .asciiz "D"
 	E: .asciiz "E"
 	F: .asciiz "F"			###
+	x: .asciiz "x"
 
 
 
@@ -208,17 +209,17 @@
 
 
 #######################################################
-# Função que converte float em binário na memória
+# FunÃ§Ã£o que converte float em binÃ¡rio na memÃ³ria
 # Parametros:
-#    - $a0: parte inteira do número
-#    - $a1: parte fracionária do número
-#    - $a2: número na forma 10 ^ X que divide $a1
-#    - $a3: 0 se o número for positivo, 1 se for negativo
+#    - $a0: parte inteira do nÃºmero
+#    - $a1: parte fracionÃ¡ria do nÃºmero
+#    - $a2: nÃºmero na forma 10 ^ X que divide $a1
+#    - $a3: 0 se o nÃºmero for positivo, 1 se for negativo
 #
-#    - O número será: ($a0 + $a1 / $a2)  *  ( -1 * $a3)
+#    - O nÃºmero serÃ¡: ($a0 + $a1 / $a2)  *  ( -1 * $a3)
 #
 # Retorno:
-#    - $v0: número no padrão IEEE 754
+#    - $v0: nÃºmero no padrÃ£o IEEE 754
 #######################################################
 
 intPartsToFloat:
@@ -232,13 +233,13 @@ intPartsToFloat:
 
 	
 	setaPrimeiroBit:
-		# muito fácil de setar
+		# muito fÃ¡cil de setar
 		move $t0, $a3 # $t0 = $a3
 		sll $t0, $t0, 31 # $t0 = $t0 << 31
 		# agrega o valor a v0
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
-		# se for positivo, não precisa multiplicar por -1
+		# se for positivo, nÃ£o precisa multiplicar por -1
 		bge $t7, $zero, naoEhZero # ($t7 >= $zero) -> naoEhZero
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
@@ -249,15 +250,15 @@ intPartsToFloat:
 	bne $t7, $zero, naoEhZero # ($t7 != $zero) -> naoEhZero
 	bne $t8, $zero, naoEhZero # ($t8 != $zero) -> naoEhZero
 
-	# é zero!!
-	# retorna a função
+	# Ã© zero!!
+	# retorna a funÃ§Ã£o
 	jr $ra
 
 
 
 
 	###
-	# Caso se não for zero
+	# Caso se nÃ£o for zero
 	###
 	naoEhZero:
 
@@ -267,16 +268,16 @@ intPartsToFloat:
 	li $t9, 10 # $t9 = 10
 
 	ate24Bit:
-		# testa se a parte inteira é maior do que 23º bit setado em 1
+		# testa se a parte inteira Ã© maior do que 23Âº bit setado em 1
 		move $t0, $t7 # $t0 = $t7
 		lw $t1, bit25EhUm # $t1 = Memory[bit25EhUm]
 		lw $t2, bit24EhUm # $t2 = Memory[bit24EhUm]
 
-		# se a parte inteira tiver o 25º bit ou mais definido
+		# se a parte inteira tiver o 25Âº bit ou mais definido
 		bge $t0, $t1, devoFazerShift # ($t0 >= bit25EhUm) -> devoFazerShift
 
 
-		# nesse caso aqui, não precisamos fazer o shift, e devemos concatenar com o número fracionario
+		# nesse caso aqui, nÃ£o precisamos fazer o shift, e devemos concatenar com o nÃºmero fracionario
 		move $t1, $t8 # $t1 = $t8
 
 		loopConcatenaFracionario:
@@ -293,20 +294,20 @@ intPartsToFloat:
 
 
 			setarParaZero:
-				# não preciso fazer nada com t0
+				# nÃ£o preciso fazer nada com t0
 				# apenas continuo o programa
 
 
-			# condição de loop
+			# condiÃ§Ã£o de loop
 			blt $t0, $t2, loopConcatenaFracionario # ($t0  < bit24EhUm) -> loopConcatenaFracionario
 
-			# já acabou de concatenar
+			# jÃ¡ acabou de concatenar
 			# se o resto for diferente de zero, devo somar um
 			ble $t1, $t8, fracionarioConcatenado # (Resto =< fracPart) -> fracionarioConcatenado
 			# Resto  > fracPart:
 			# devo somar 1
 
-			# se t0 for esse número q t3 está recebendo, não faz nada
+			# se t0 for esse nÃºmero q t3 estÃ¡ recebendo, nÃ£o faz nada
 			li $t3, 0x00ffffff # $t3 = 0x00ffffff
 			beq $t0, $t3, fracionarioConcatenado # ($t0 == casoEspecialNaoSoma) -> fracionarioConcatenado
 
@@ -317,8 +318,8 @@ intPartsToFloat:
 
 
 		devoFazerShift:
-			# nesse caso, a parte fracionária não precisa ser considerada
-			# devo fazer shift até 25 pra frente ser 0
+			# nesse caso, a parte fracionÃ¡ria nÃ£o precisa ser considerada
+			# devo fazer shift atÃ© 25 pra frente ser 0
 			# $t1 = Memory[bit25EhUm]
 			loopFazerShift:
 				srl $t0, $t0, 1 # $t0 = $t0 >> 1
@@ -326,7 +327,7 @@ intPartsToFloat:
 
 
 		fracionarioConcatenado:
-			# remover o 24º bit
+			# remover o 24Âº bit
 			lw $t2, bit24EhUm # $t2 = Memory[bit24EhUm]
 			xor $t0, $t0, $t2 # $t0 = $t0 xor $t2
 
@@ -336,19 +337,19 @@ intPartsToFloat:
 
 
 		#######################################################
-		# Nesse ponto, só falta colocar o expoente em v0
+		# Nesse ponto, sÃ³ falta colocar o expoente em v0
 		#######################################################
 		calculoExpoenteReal:
-			# o resultado dessa função estará em t0
+			# o resultado dessa funÃ§Ã£o estarÃ¡ em t0
 			li $t0, 0 # $t0 = 0
-			# se o número tiver parte inteira, devo
+			# se o nÃºmero tiver parte inteira, devo
 			bne $t7, $zero, temParteInt # (partInt != $zero) -> temParteInt
 
 
 			move $t1, $t8 # $t1 = partFrac
 			loopSoPartFrac:
-				# aqui é o caso se o número for do tipo 0.XXXXXX
-				# vai multiplicando o número por 2 até partFrac ultrapassar a2
+				# aqui Ã© o caso se o nÃºmero for do tipo 0.XXXXXX
+				# vai multiplicando o nÃºmero por 2 atÃ© partFrac ultrapassar a2
 				sll $t1, $t1, 1 # $t1 = $t1 << 1
 				addi $t0, $t0, -1 # $t0 = $t0 + -1
 				bge $t1, $a2, calculoExpoenteIEEE # ($t1 >= 10^X) -> calculoExpoenteIEEE
@@ -357,7 +358,7 @@ intPartsToFloat:
 
 			temParteInt:
 				move $t1, $t7 # $t1 = partInt
-				# vai dividindo por 2 até t1 ser igual a 1
+				# vai dividindo por 2 atÃ© t1 ser igual a 1
 				li $t2, 1 # $t2 = 1
 				loopParteInteira:
 					beq $t1, $t2, calculoExpoenteIEEE # ($t1 == "1") -> calculoExpoenteIEEE
@@ -370,7 +371,7 @@ intPartsToFloat:
 			# t0 deve ser normalizado com 127
 			addi $t0, $t0, 127 # $t0 = $t0 + 127
 
-			# nesse ponto, só devo ajustar t0 para frente
+			# nesse ponto, sÃ³ devo ajustar t0 para frente
 			# e concatenar com v0
 			sll $t0, $t0, 23 # $t0 = $t0 << 23
 			or $v0, $v0, $t0 # $v0 = $v0 | $t0
@@ -408,6 +409,13 @@ printBinHex:
 		
 		#Iniciando operacoes para converter e imprimir hexadecimal
 		li $t0, 28
+			li $v0, 1	#imprime 0
+			move $a0, $0
+			syscall
+				#imprime X
+			la $a0, x
+			addi $v0, $0, 4
+			syscall
 			
 		loopQueConverteEImprimeHexadecimal:
 			srlv $t2,$t1,$t0 
