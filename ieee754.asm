@@ -26,6 +26,7 @@
 	invalido:	.asciiz		"ENTRADA NAO EH VALIDA\n-------------------------------------------------------\n\n"
 	entrada:	.asciiz		"Digite o valor com sinal: "
 	buffer:		.space		40
+	pula_linha	.asciiz		"/n"
 
 
 	newLine:  .asciiz "\n"		#utilizado para o \n na funcao printbinhex
@@ -71,12 +72,12 @@
 		jal ler_string		#le a string
 		lb $t1, buffer
 		
-		bne $t1, 43, verifica_semenos	#verirfica se eh "+" ou "-"
-		beq $t1, 43, se_mais
+		bne $t1, 43, verifica_semenos	#verifica se eh "+" ou "-"
+		beq $t1, 43, se_mais		#coloca a3=0 se for mais
 		
 		eh_menos:
-		beq $t1, 45, se_menos
-		
+		beq $t1, 45, se_menos		#coloca a3=1 se for menos
+			
 		voltamain:
 	
 		li $s0, 0		#s0=0 s0->posicao da string
@@ -91,12 +92,20 @@
 		jal intPartsToFloat
 		
 		move $a0, $v0
-
+		
+		jal printBinHex		#chama funcao para printar os valores em binario e hexadecimal
+		
+		
+		
+		li $v0, 4		#imprimi string
+		la $a0, pula_linha	#pula uma linha depois de imprimir os numeros em binario e hexadecimal, detalhe apenas estetico
+		syscall
+		
 		
 		j main
 		
 	verifica_a2:
-		beq $a2, 1, mudar_pra_zero
+		beq $a2, 1, mudar_pra_zero		#caso o a2 seja um muda ele para zero
 		jr $ra
 		
 	mudar_pra_zero:
