@@ -303,17 +303,34 @@ intPartsToFloat:
 
 			# já acabou de concatenar
 			# se o resto for diferente de zero, devo somar um
-			ble $t1, $t8, fracionarioConcatenado # (Resto =< fracPart) -> fracionarioConcatenado
-			# Resto  > fracPart:
-			# devo somar 1
+			# obtem um número na forma 10^X que é maior do que t8
+			li $t4, 10 # $t4 = 10
+			numeroMarioQueResto:
+				bgt $t4, $t1, numeroMarioQueRestoFim # (10^X  > Resto) -> devoSomar1
+				# Resto <= 10^X
+				mul $t4, $t4, 10 # $t4 = $t4 * 10
+				j numeroMarioQueResto # volta pro loop
+			numeroMarioQueRestoFim:
+			li $t5, 10 # $t5 = 10
+			numeroMarioQueFracPart:
+				bgt $t5, $t8, devoSomar1 # (10^X  > fracPart) -> devoSomar1
+				# fracPart <= Resto
+				mul $t5, $t5, 10 # $t5 = $t5 * 10
+				j numeroMarioQueFracPart # volta pro loop
+			devoSomar1:
+				div $t4, $t4, $t5 # $t4 = $t4 / $t5
+				mul $t8, $t8, $t4 # $t8 = $t8 * $t4
+				ble $t1, $t8, fracionarioConcatenado # (Resto =< fracPart) -> fracionarioConcatenado
+				# Resto  > fracPart:
+				# devo somar 1
 
-			# se t0 for esse número q t3 está recebendo, não faz nada
-			li $t3, 0x00ffffff # $t3 = 0x00ffffff
-			beq $t0, $t3, fracionarioConcatenado # ($t0 == casoEspecialNaoSoma) -> fracionarioConcatenado
+				# se t0 for esse número q t3 está recebendo, não faz nada
+				li $t3, 0x00ffffff # $t3 = 0x00ffffff
+				beq $t0, $t3, fracionarioConcatenado # ($t0 == casoEspecialNaoSoma) -> fracionarioConcatenado
 
-			# t0 != casoEspecialNaoSoma
-			addiu $t0, $t0, 1 # $t0 = $t0 + 1
-			j fracionarioConcatenado
+				# t0 != casoEspecialNaoSoma
+				addiu $t0, $t0, 1 # $t0 = $t0 + 1
+				j fracionarioConcatenado
 
 
 
@@ -345,7 +362,7 @@ intPartsToFloat:
 			# se o número tiver parte inteira, devo
 			bne $t7, $zero, temParteInt # (partInt != $zero) -> temParteInt
 
-
+			move $t8, $a1 # $t8 = $a1
 			move $t1, $t8 # $t1 = partFrac
 			loopSoPartFrac:
 				# aqui é o caso se o número for do tipo 0.XXXXXX
