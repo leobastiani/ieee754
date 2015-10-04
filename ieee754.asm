@@ -1,5 +1,8 @@
 ######################################################
 # Trabalho 1 de ORG
+# Leonardo Guarnieri de Bastiani 8910434
+# Thiago Ochsendorf Pacheco      9036632
+# Fábio Satoshi Sumida           8910542
 #######################################################
 
 
@@ -218,6 +221,9 @@
 #######################################################
 
 intPartsToFloat:
+	# pra mostrar q eu sei usar stack pointer
+	addi $sp, $sp, -4 # $sp = $sp + -4
+	sw $ra, 0($sp) # Memory[0 + $sp] = $ra
 	# trabalha com t7, t8 e t9 ao inves de a0, a1 e a2
 	move $t7, $a0 # $t7 = $a0
 	move $t8, $a1 # $t8 = $a1
@@ -235,19 +241,19 @@ intPartsToFloat:
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
 		# se for positivo, não precisa multiplicar por -1
-		bge $t7, $zero, naoEhZero # ($t7 >= $zero) -> naoEhZero
+		bge $t7, $zero, testeZero # ($t7 >= $zero) -> testeZero
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
 
 	
-
+	testeZero:
 	# caso especial, se for igual a zero
 	bne $t7, $zero, naoEhZero # ($t7 != $zero) -> naoEhZero
 	bne $t8, $zero, naoEhZero # ($t8 != $zero) -> naoEhZero
 
 	# é zero!!
 	# retorna a função
-	jr $ra
+	j intPartsToFloatRetorno
 
 
 
@@ -376,7 +382,10 @@ intPartsToFloat:
 
 
 
-
+	# pra mostrar q a gente sabe usar stack pointer
+	intPartsToFloatRetorno:
+	lw $ra, 0($sp) # $ra = Memory[0 + $sp]
+	addi $sp, $sp, 4 # $sp = $sp + 4
 	jr $ra
 
 
