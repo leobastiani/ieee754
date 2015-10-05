@@ -2,7 +2,11 @@
 # Trabalho 1 de ORG
 # Leonardo Guarnieri de Bastiani 8910434
 # Thiago Ochsendorf Pacheco      9036632
+<<<<<<< HEAD
 # Fábio Satoshi Sumida           8910542
+=======
+# FÃ¡bio Satoshi Sumida           8910542
+>>>>>>> origin/master
 #######################################################
 
 
@@ -231,6 +235,9 @@
 
 
 
+
+
+
 #######################################################
 # Função que converte float em binário na memória
 # Parametros:
@@ -265,7 +272,11 @@ intPartsToFloat:
 		# agrega o valor a v0
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
+<<<<<<< HEAD
 		# se for positivo, não precisa multiplicar por -1
+=======
+		# se for positivo, nÃ£o precisa multiplicar por -1
+>>>>>>> origin/master
 		bge $t7, $zero, testeZero # ($t7 >= $zero) -> testeZero
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
@@ -276,8 +287,13 @@ intPartsToFloat:
 	bne $t7, $zero, naoEhZero # ($t7 != $zero) -> naoEhZero
 	bne $t8, $zero, naoEhZero # ($t8 != $zero) -> naoEhZero
 
+<<<<<<< HEAD
 	# é zero!!
 	# retorna a função
+=======
+	# Ã© zero!!
+	# retorna a funÃ§Ã£o
+>>>>>>> origin/master
 	j intPartsToFloatRetorno
 
 
@@ -512,6 +528,9 @@ printBinHex:
 			exit2:
 			
 			
-		
-	move $a0,$t1	#fazer a0 = t1
+	
+	move $a0,$t1##fazer a0 = t1
+	li $v0, 4		#imprimi string
+	la $a0, newLine	#pula uma linha depois de imprimir os numeros em binario e hexadecimal, detalhe apenas estetico
+	syscall
 	jr $ra
