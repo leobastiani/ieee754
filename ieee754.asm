@@ -23,13 +23,13 @@
 	numeroTeste: .float -13.1875
 
 
-	menu:		.asciiz		"\n0 - Converter\n1 - Sair\n"
+	menu:		.asciiz		"0 - Converter\n1 - Sair\n"
 	invalido:	.asciiz		"\nENTRADA NAO EH VALIDA!!!\n--------------------------------------------------------------------\n\nPRECIONE UMA TECLA PARA CONTINUAR.\n"
 	entrada:	.asciiz		"Digite o valor com sinal: "
 	buffer:		.space		40
 	in_menu:	.space		3
 	press:		.space		1
-	linha:		.asciiz		"\n--*----*----*----*----*----*----*----*----*----*----*----*----*-----"
+	linha:		.asciiz		"\n--*----*----*----*----*----*----*----*----*----*----*----*----*-----\n"
 
 
 	newLine:  .asciiz "\n"		#utilizado para o \n na funcao printbinhex
@@ -66,15 +66,15 @@
 		syscall
 		
 		
-		jal ler_string_menu		#ler inteiro 0 ou 1
+		jal ler_string_menu		#ler 0 ou 1
 		lb $t1, in_menu
-		beq $t1, 49, end	#compara t0 (valor dado pelo usuario) com 1, se for finaliza
+		beq $t1, 49, end	#compara t1 (valor dado pelo usuario) com 1, se for finaliza
 		jal not_zero		#se nao for nem zero nem um dar msg de erro
 		
 		#apartir daqui eu tenho certeza que a entrada dada eh 0
 		
 		jal ler_string		#le a string
-		lb $t1, buffer
+		lb $t1, buffer		#armazena em t1 o primeiro bit da string
 		
 		bne $t1, 43, verifica_semenos	#verifica se eh "+" ou "-"
 		beq $t1, 43, se_mais		#coloca a3=0 se for mais
@@ -121,27 +121,27 @@
 		beq $a2, 1, mudar_pra_zero		#caso o a2 seja um muda ele para zero
 		jr $ra
 		
-	mudar_pra_zero:
+	mudar_pra_zero:				#se a2=1 faz a2=0
 		li $a2, 0
 		jr $ra
 		
 		
 		
-	se_mais:
+	se_mais:				#se o numero for positivo faz a3=0
 		li $a3, 0
 		j voltamain
-		
-	se_menos:
+			
+	se_menos:				#se o numero for negativo faz a3=1
 		li $a3, 1
 		j voltamain
 		
 	loop_int:
-		addi $s0, $s0, 1
+		addi $s0, $s0, 1		#incrementa a posicao no vetor
 		lb $t1, buffer($s0)
-		beq $t1, 10, fim_loop
-		beq $t1, 44, loop_decimal	#verifica se eh virgula
-		blt $t1, 48, invalid		#verifica se eh um numero
-		bgt $t1, 57, invalid		#verifica se eh um numero
+		beq $t1, 10, fim_loop		#se a string acabar nao tem parte decimal e finaliza leitura
+		beq $t1, 44, loop_decimal	#verifica se eh virgula, se for inicia leitura da parte decimal
+		blt $t1, 48, invalid		#verifica se eh um numero, se nao for "entrada invalida"
+		bgt $t1, 57, invalid		#verifica se eh um numero, se nao for "entrada invalida"
 
 		
 		mul $a0, $a0, 10		#aumenta uma casa decimal do valor anterior
@@ -153,7 +153,7 @@
 		
 		j loop_int
 		
-	verifica_semenos:
+	verifica_semenos:			#verifica se eh sinal de menos, como jah verificou se eh sinal de mais se nao for menos da msg de erro
 		bne $t1, 45, invalid
 		j eh_menos
 		
@@ -518,5 +518,5 @@ printBinHex:
 			
 			
 		
-	move $a0,$t1##fazer a0 = t1
+	move $a0,$t1	#fazer a0 = t1
 	jr $ra
