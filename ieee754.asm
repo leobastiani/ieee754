@@ -1,6 +1,8 @@
-
 ######################################################
 # Trabalho 1 de ORG
+# Leonardo Guarnieri de Bastiani 8910434
+# Thiago Ochsendorf Pacheco      9036632
+# Fábio Satoshi Sumida           8910542
 #######################################################
 
 
@@ -24,12 +26,9 @@
 
 
 	menu:		.asciiz		"0 - Converter\n1 - Sair\n"
-	invalido:	.asciiz		"\nENTRADA NAO EH VALIDA!!!\n--------------------------------------------------------------------\n\nPRECIONE UMA TECLA PARA CONTINUAR.\n"
+	invalido:	.asciiz		"ENTRADA NAO EH VALIDA\n-------------------------------------------------------\n\n"
 	entrada:	.asciiz		"Digite o valor com sinal: "
 	buffer:		.space		40
-	in_menu:	.space		3
-	press:		.space		1
-	linha:		.asciiz		"\n--*----*----*----*----*----*----*----*----*----*----*----*----*-----\n"
 
 
 	newLine:  .asciiz "\n"		#utilizado para o \n na funcao printbinhex
@@ -228,6 +227,9 @@
 
 
 
+
+
+
 #######################################################
 # Função que converte float em binário na memória
 # Parametros:
@@ -243,6 +245,9 @@
 #######################################################
 
 intPartsToFloat:
+	# pra mostrar q eu sei usar stack pointer
+	addi $sp, $sp, -4 # $sp = $sp + -4
+	sw $ra, 0($sp) # Memory[0 + $sp] = $ra
 	# trabalha com t7, t8 e t9 ao inves de a0, a1 e a2
 	move $t7, $a0 # $t7 = $a0
 	move $t8, $a1 # $t8 = $a1
@@ -260,19 +265,19 @@ intPartsToFloat:
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
 		# se for positivo, não precisa multiplicar por -1
-		bge $t7, $zero, naoEhZero # ($t7 >= $zero) -> naoEhZero
+		bge $t7, $zero, testeZero # ($t7 >= $zero) -> testeZero
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
 
 	
-
+	testeZero:
 	# caso especial, se for igual a zero
 	bne $t7, $zero, naoEhZero # ($t7 != $zero) -> naoEhZero
 	bne $t8, $zero, naoEhZero # ($t8 != $zero) -> naoEhZero
 
 	# é zero!!
 	# retorna a função
-	jr $ra
+	j intPartsToFloatRetorno
 
 
 
@@ -323,25 +328,11 @@ intPartsToFloat:
 
 			# já acabou de concatenar
 			# se o resto for diferente de zero, devo somar um
-			# obtem um número na forma 10^X que é maior do que t8
-			li $t4, 10 # $t4 = 10
-			numeroMarioQueResto:
-				bgt $t4, $t1, numeroMarioQueRestoFim # (10^X  > Resto) -> devoSomar1
-				# Resto <= 10^X
-				mul $t4, $t4, 10 # $t4 = $t4 * 10
-				j numeroMarioQueResto # volta pro loop
-			numeroMarioQueRestoFim:
-			li $t5, 10 # $t5 = 10
-			numeroMarioQueFracPart:
-				bgt $t5, $t8, devoSomar1 # (10^X  > fracPart) -> devoSomar1
-				# fracPart <= Resto
-				mul $t5, $t5, 10 # $t5 = $t5 * 10
-				j numeroMarioQueFracPart # volta pro loop
 			devoSomar1:
-				div $t4, $t4, $t5 # $t4 = $t4 / $t5
-				mul $t8, $t8, $t4 # $t8 = $t8 * $t4
-				ble $t1, $t8, fracionarioConcatenado # (Resto =< fracPart) -> fracionarioConcatenado
-				# Resto  > fracPart:
+				mul $t1, $t1, 10 # $t1 = $t1 * 10
+				div $t1, $t1, $t9 # $t1 = $t1 / $t9
+				blt $t1, 5, fracionarioConcatenado # (Resto < 5) -> fracionarioConcatenado
+				# Resto >= 5:
 				# devo somar 1
 
 				# se t0 for esse número q t3 está recebendo, não faz nada
@@ -415,7 +406,10 @@ intPartsToFloat:
 
 
 
-
+	# pra mostrar q a gente sabe usar stack pointer
+	intPartsToFloatRetorno:
+	lw $ra, 0($sp) # $ra = Memory[0 + $sp]
+	addi $sp, $sp, 4 # $sp = $sp + 4
 	jr $ra
 
 
@@ -517,6 +511,9 @@ printBinHex:
 			exit2:
 			
 			
-		
-	move $a0,$t1	#fazer a0 = t1
+	
+	move $a0,$t1##fazer a0 = t1
+	li $v0, 4		#imprimi string
+	la $a0, newLine	#pula uma linha depois de imprimir os numeros em binario e hexadecimal, detalhe apenas estetico
+	syscall
 	jr $ra
