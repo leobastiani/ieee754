@@ -26,9 +26,12 @@
 
 
 	menu:		.asciiz		"0 - Converter\n1 - Sair\n"
-	invalido:	.asciiz		"ENTRADA NAO EH VALIDA\n-------------------------------------------------------\n\n"
+	invalido:	.asciiz		"\nENTRADA NAO EH VALIDA!!!\n--------------------------------------------------------------------\n\nPRECIONE UMA TECLA PARA CONTINUAR.\n"
 	entrada:	.asciiz		"Digite o valor com sinal: "
 	buffer:		.space		40
+	in_menu:	.space		3
+	press:		.space		1
+	linha:		.asciiz		"\n--*----*----*----*----*----*----*----*----*----*----*----*----*-----\n"
 
 
 	newLine:  .asciiz "\n"		#utilizado para o \n na funcao printbinhex
