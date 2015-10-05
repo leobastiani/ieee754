@@ -1,8 +1,6 @@
+
 ######################################################
 # Trabalho 1 de ORG
-# Leonardo Guarnieri de Bastiani 8910434
-# Thiago Ochsendorf Pacheco      9036632
-# Fábio Satoshi Sumida           8910542
 #######################################################
 
 
@@ -15,9 +13,9 @@
 
 .data # diretiva para inicio do seg de dados
 
-	# número que diz se o primeiro byte é um
+	# nÃºmero que diz se o primeiro byte Ã© um
 	primeiroUmRestoZero: .word 0x80000000
-	# variavel que o vigésimo terceiro bit é 1
+	# variavel que o vigÃ©simo terceiro bit Ã© 1
 	bit23EhUm: .word 0x00400000
 	bit24EhUm: .word 0x00800000
 	bit25EhUm: .word 0x01000000
@@ -25,10 +23,13 @@
 	numeroTeste: .float -13.1875
 
 
-	menu:		.asciiz		"0 - Converter\n1 - Sair\n"
-	invalido:	.asciiz		"ENTRADA NAO EH VALIDA\n-------------------------------------------------------\n\n"
+	menu:		.asciiz		"\n0 - Converter\n1 - Sair\n"
+	invalido:	.asciiz		"\nENTRADA NAO EH VALIDA!!!\n--------------------------------------------------------------------\n\nPRECIONE UMA TECLA PARA CONTINUAR.\n"
 	entrada:	.asciiz		"Digite o valor com sinal: "
 	buffer:		.space		40
+	in_menu:	.space		3
+	press:		.space		1
+	linha:		.asciiz		"\n--*----*----*----*----*----*----*----*----*----*----*----*----*-----"
 
 
 	newLine:  .asciiz "\n"		#utilizado para o \n na funcao printbinhex
@@ -65,9 +66,9 @@
 		syscall
 		
 		
-		jal ler_inteiro		#ler inteiro 0 ou 1
-		li $t1, 1		#t1 = 1, para comparar com o valor digitado
-		beq $t0, $t1, end	#compara t0 (valor dado pelo usuario) com 1, se for finaliza
+		jal ler_string_menu		#ler inteiro 0 ou 1
+		lb $t1, in_menu
+		beq $t1, 49, end	#compara t0 (valor dado pelo usuario) com 1, se for finaliza
 		jal not_zero		#se nao for nem zero nem um dar msg de erro
 		
 		#apartir daqui eu tenho certeza que a entrada dada eh 0
@@ -100,7 +101,21 @@
 		
 		
 		
+		li $v0, 4		#imprimi string
+		la $a0, newLine	#pula uma linha depois de imprimir os numeros em binario e hexadecimal, detalhe apenas estetico
+		syscall
+		
+		
 		j main
+
+
+	ler_string_menu:
+		li $v0, 8			#ler string
+		la $a0, in_menu
+		li $a1, 3			#tamanho da string
+		syscall 
+		move $t0, $a0			#string armazenada em t0
+		jr $ra
 		
 	verifica_a2:
 		beq $a2, 1, mudar_pra_zero		#caso o a2 seja um muda ele para zero
@@ -173,7 +188,7 @@
 		
 		
 	not_zero:				#verifica se a entrada eh zero
-		bne $t0, $zero, invalid		#se nao for 0 msg de erro
+		bne $t1, 48, invalid		#se nao for 0 msg de erro
 		jr $ra				#se for voltar do ponto onde parou na main
 		
 		
@@ -181,6 +196,13 @@
 	invalid:				#funcao para imprimir msg de erro quando a entrada nao for valida
 		li $v0, 4		#imprimir string
 		la $a0, invalido
+		syscall
+		li $v0, 8			#ler string
+		la $a0, press
+		li $a1, 1			#tamanho da string
+		syscall 
+		li $v0, 4		#imprimir string
+		la $a0, linha
 		syscall
 		j main
 		
@@ -207,23 +229,20 @@
 
 
 #######################################################
-# Função que converte float em binário na memória
+# FunÃ§Ã£o que converte float em binÃ¡rio na memÃ³ria
 # Parametros:
-#    - $a0: parte inteira do número
-#    - $a1: parte fracionária do número
-#    - $a2: número na forma 10 ^ X que divide $a1
-#    - $a3: 0 se o número for positivo, 1 se for negativo
+#    - $a0: parte inteira do nÃºmero
+#    - $a1: parte fracionÃ¡ria do nÃºmero
+#    - $a2: nÃºmero na forma 10 ^ X que divide $a1
+#    - $a3: 0 se o nÃºmero for positivo, 1 se for negativo
 #
-#    - O número será: ($a0 + $a1 / $a2)  *  ( -1 * $a3)
+#    - O nÃºmero serÃ¡: ($a0 + $a1 / $a2)  *  ( -1 * $a3)
 #
 # Retorno:
-#    - $v0: número no padrão IEEE 754
+#    - $v0: nÃºmero no padrÃ£o IEEE 754
 #######################################################
 
 intPartsToFloat:
-	# pra mostrar q eu sei usar stack pointer
-	addi $sp, $sp, -4 # $sp = $sp + -4
-	sw $ra, 0($sp) # Memory[0 + $sp] = $ra
 	# trabalha com t7, t8 e t9 ao inves de a0, a1 e a2
 	move $t7, $a0 # $t7 = $a0
 	move $t8, $a1 # $t8 = $a1
@@ -234,32 +253,32 @@ intPartsToFloat:
 
 	
 	setaPrimeiroBit:
-		# muito fácil de setar
+		# muito fÃ¡cil de setar
 		move $t0, $a3 # $t0 = $a3
 		sll $t0, $t0, 31 # $t0 = $t0 << 31
 		# agrega o valor a v0
 		or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
-		# se for positivo, não precisa multiplicar por -1
-		bge $t7, $zero, testeZero # ($t7 >= $zero) -> testeZero
+		# se for positivo, nÃ£o precisa multiplicar por -1
+		bge $t7, $zero, naoEhZero # ($t7 >= $zero) -> naoEhZero
 		# se for negativo, multiplica por -1
 		sub $t7, $zero, $t7 # $t7 = $zero - $t7
 
 	
-	testeZero:
+
 	# caso especial, se for igual a zero
 	bne $t7, $zero, naoEhZero # ($t7 != $zero) -> naoEhZero
 	bne $t8, $zero, naoEhZero # ($t8 != $zero) -> naoEhZero
 
-	# é zero!!
-	# retorna a função
-	j intPartsToFloatRetorno
+	# Ã© zero!!
+	# retorna a funÃ§Ã£o
+	jr $ra
 
 
 
 
 	###
-	# Caso se não for zero
+	# Caso se nÃ£o for zero
 	###
 	naoEhZero:
 
@@ -269,16 +288,16 @@ intPartsToFloat:
 	li $t9, 10 # $t9 = 10
 
 	ate24Bit:
-		# testa se a parte inteira é maior do que 23º bit setado em 1
+		# testa se a parte inteira Ã© maior do que 23Âº bit setado em 1
 		move $t0, $t7 # $t0 = $t7
 		lw $t1, bit25EhUm # $t1 = Memory[bit25EhUm]
 		lw $t2, bit24EhUm # $t2 = Memory[bit24EhUm]
 
-		# se a parte inteira tiver o 25º bit ou mais definido
+		# se a parte inteira tiver o 25Âº bit ou mais definido
 		bge $t0, $t1, devoFazerShift # ($t0 >= bit25EhUm) -> devoFazerShift
 
 
-		# nesse caso aqui, não precisamos fazer o shift, e devemos concatenar com o número fracionario
+		# nesse caso aqui, nÃ£o precisamos fazer o shift, e devemos concatenar com o nÃºmero fracionario
 		move $t1, $t8 # $t1 = $t8
 
 		loopConcatenaFracionario:
@@ -295,23 +314,37 @@ intPartsToFloat:
 
 
 			setarParaZero:
-				# não preciso fazer nada com t0
+				# nÃ£o preciso fazer nada com t0
 				# apenas continuo o programa
 
 
-			# condição de loop
+			# condiÃ§Ã£o de loop
 			blt $t0, $t2, loopConcatenaFracionario # ($t0  < bit24EhUm) -> loopConcatenaFracionario
 
-			# já acabou de concatenar
+			# jÃ¡ acabou de concatenar
 			# se o resto for diferente de zero, devo somar um
+			# obtem um nÃºmero na forma 10^X que Ã© maior do que t8
+			li $t4, 10 # $t4 = 10
+			numeroMarioQueResto:
+				bgt $t4, $t1, numeroMarioQueRestoFim # (10^X  > Resto) -> devoSomar1
+				# Resto <= 10^X
+				mul $t4, $t4, 10 # $t4 = $t4 * 10
+				j numeroMarioQueResto # volta pro loop
+			numeroMarioQueRestoFim:
+			li $t5, 10 # $t5 = 10
+			numeroMarioQueFracPart:
+				bgt $t5, $t8, devoSomar1 # (10^X  > fracPart) -> devoSomar1
+				# fracPart <= Resto
+				mul $t5, $t5, 10 # $t5 = $t5 * 10
+				j numeroMarioQueFracPart # volta pro loop
 			devoSomar1:
-				mul $t1, $t1, 10 # $t1 = $t1 * 10
-				div $t1, $t1, $t9 # $t1 = $t1 / $t9
-				blt $t1, 5, fracionarioConcatenado # (Resto < 5) -> fracionarioConcatenado
-				# Resto >= 5:
+				div $t4, $t4, $t5 # $t4 = $t4 / $t5
+				mul $t8, $t8, $t4 # $t8 = $t8 * $t4
+				ble $t1, $t8, fracionarioConcatenado # (Resto =< fracPart) -> fracionarioConcatenado
+				# Resto  > fracPart:
 				# devo somar 1
 
-				# se t0 for esse número q t3 está recebendo, não faz nada
+				# se t0 for esse nÃºmero q t3 estÃ¡ recebendo, nÃ£o faz nada
 				li $t3, 0x00ffffff # $t3 = 0x00ffffff
 				beq $t0, $t3, fracionarioConcatenado # ($t0 == casoEspecialNaoSoma) -> fracionarioConcatenado
 
@@ -322,8 +355,8 @@ intPartsToFloat:
 
 
 		devoFazerShift:
-			# nesse caso, a parte fracionária não precisa ser considerada
-			# devo fazer shift até 25 pra frente ser 0
+			# nesse caso, a parte fracionÃ¡ria nÃ£o precisa ser considerada
+			# devo fazer shift atÃ© 25 pra frente ser 0
 			# $t1 = Memory[bit25EhUm]
 			loopFazerShift:
 				srl $t0, $t0, 1 # $t0 = $t0 >> 1
@@ -331,7 +364,7 @@ intPartsToFloat:
 
 
 		fracionarioConcatenado:
-			# remover o 24º bit
+			# remover o 24Âº bit
 			lw $t2, bit24EhUm # $t2 = Memory[bit24EhUm]
 			xor $t0, $t0, $t2 # $t0 = $t0 xor $t2
 
@@ -341,19 +374,19 @@ intPartsToFloat:
 
 
 		#######################################################
-		# Nesse ponto, só falta colocar o expoente em v0
+		# Nesse ponto, sÃ³ falta colocar o expoente em v0
 		#######################################################
 		calculoExpoenteReal:
-			# o resultado dessa função estará em t0
+			# o resultado dessa funÃ§Ã£o estarÃ¡ em t0
 			li $t0, 0 # $t0 = 0
-			# se o número tiver parte inteira, devo
+			# se o nÃºmero tiver parte inteira, devo
 			bne $t7, $zero, temParteInt # (partInt != $zero) -> temParteInt
 
 			move $t8, $a1 # $t8 = $a1
 			move $t1, $t8 # $t1 = partFrac
 			loopSoPartFrac:
-				# aqui é o caso se o número for do tipo 0.XXXXXX
-				# vai multiplicando o número por 2 até partFrac ultrapassar a2
+				# aqui Ã© o caso se o nÃºmero for do tipo 0.XXXXXX
+				# vai multiplicando o nÃºmero por 2 atÃ© partFrac ultrapassar a2
 				sll $t1, $t1, 1 # $t1 = $t1 << 1
 				addi $t0, $t0, -1 # $t0 = $t0 + -1
 				bge $t1, $a2, calculoExpoenteIEEE # ($t1 >= 10^X) -> calculoExpoenteIEEE
@@ -362,7 +395,7 @@ intPartsToFloat:
 
 			temParteInt:
 				move $t1, $t7 # $t1 = partInt
-				# vai dividindo por 2 até t1 ser igual a 1
+				# vai dividindo por 2 atÃ© t1 ser igual a 1
 				li $t2, 1 # $t2 = 1
 				loopParteInteira:
 					beq $t1, $t2, calculoExpoenteIEEE # ($t1 == "1") -> calculoExpoenteIEEE
@@ -375,17 +408,14 @@ intPartsToFloat:
 			# t0 deve ser normalizado com 127
 			addi $t0, $t0, 127 # $t0 = $t0 + 127
 
-			# nesse ponto, só devo ajustar t0 para frente
+			# nesse ponto, sÃ³ devo ajustar t0 para frente
 			# e concatenar com v0
 			sll $t0, $t0, 23 # $t0 = $t0 << 23
 			or $v0, $v0, $t0 # $v0 = $v0 | $t0
 
 
 
-	# pra mostrar q a gente sabe usar stack pointer
-	intPartsToFloatRetorno:
-	lw $ra, 0($sp) # $ra = Memory[0 + $sp]
-	addi $sp, $sp, 4 # $sp = $sp + 4
+
 	jr $ra
 
 
@@ -487,9 +517,6 @@ printBinHex:
 			exit2:
 			
 			
-	
+		
 	move $a0,$t1##fazer a0 = t1
-	li $v0, 4		#imprimi string
-	la $a0, newLine	#pula uma linha depois de imprimir os numeros em binario e hexadecimal, detalhe apenas estetico
-	syscall
 	jr $ra
